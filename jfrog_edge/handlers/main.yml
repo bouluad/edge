@@ -1,0 +1,4 @@
+- name: Restart JFrog Edge
+  ansible.builtin.systemd:
+    name: artifactory
+    state: restarted
