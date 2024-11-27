@@ -1,0 +1,16 @@
+[Unit]
+Description=JFrog Edge Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ jfrog_edge_user }}
+Group={{ jfrog_edge_group }}
+ExecStart={{ jfrog_edge_install_dir }}/bin/artifactory.sh
+ExecStop={{ jfrog_edge_install_dir }}/bin/artifactory.sh stop
+Restart=on-failure
+LimitNOFILE=1048576
+LimitNPROC=1048576
+
+[Install]
+WantedBy=multi-user.target
