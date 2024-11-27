@@ -1,0 +1,57 @@
+- name: Ensure JFrog Edge user exists
+  ansible.builtin.user:
+    name: "{{ jfrog_edge_user }}"
+    group: "{{ jfrog_edge_group }}"
+    create_home: no
+    system: yes
+
+- name: Create directories for installation and data
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ jfrog_edge_user }}"
+    group: "{{ jfrog_edge_group }}"
+    mode: '0755'
+  loop:
+    - "{{ jfrog_edge_install_dir }}"
+    - "{{ jfrog_edge_data_dir }}"
+
+- name: Download JFrog Edge binary
+  ansible.builtin.get_url:
+    url: "https://releases.jfrog.io/artifactory/artifactory-pro/{{ jfrog_edge_version }}/jfrog-artifactory-{{ jfrog_edge_version }}-linux.tar.gz"
+    dest: "/tmp/jfrog-edge.tar.gz"
+
+- name: Extract JFrog Edge
+  ansible.builtin.unarchive:
+    src: "/tmp/jfrog-edge.tar.gz"
+    dest: "{{ jfrog_edge_install_dir }}"
+    remote_src: yes
+    owner: "{{ jfrog_edge_user }}"
+    group: "{{ jfrog_edge_group }}"
+    extra_opts: [--strip-components=1]
+
+- name: Set up configuration files
+  ansible.builtin.template:
+    src: "artifactory.config.yaml.j2"
+    dest: "{{ jfrog_edge_data_dir }}/etc/artifactory/artifactory.config.yaml"
+    owner: "{{ jfrog_edge_user }}"
+    group: "{{ jfrog_edge_group }}"
+    mode: '0644'
+
+- name: Set up systemd service
+  ansible.builtin.template:
+    src: "systemd-artifactory-edge.service.j2"
+    dest: "/etc/systemd/system/artifactory.service"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Enable and start Artifactory service
+  ansible.builtin.systemd:
+    name: artifactory
+    enabled: yes
+    state: started
