@@ -1,0 +1,9 @@
+# Default variables for JFrog Edge
+jfrog_edge_version: "7.63.3"
+jfrog_edge_install_dir: "/opt/jfrog"
+jfrog_edge_data_dir: "/var/opt/jfrog/artifactory"
+jfrog_edge_user: "artifactory"
+jfrog_edge_group: "artifactory"
+
+jfrog_base_url: "http://your-artifactory-url"
+jfrog_access_token: "your-access-token"
