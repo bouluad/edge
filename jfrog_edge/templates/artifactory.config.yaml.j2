@@ -1,0 +1,12 @@
+configVersion: 1
+shared:
+  nodeId: "{{ ansible_hostname }}"
+  masterKey: ""
+security:
+  token:
+    accessToken: "{{ jfrog_access_token }}"
+artifactory:
+  baseUrl: "{{ jfrog_base_url }}"
+  joinKey: ""
+replication:
+  maxReplicationThreads: 10
