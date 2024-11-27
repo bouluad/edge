@@ -1,0 +1,8 @@
+- name: Install and configure JFrog Edge
+  hosts: all
+  become: yes
+  roles:
+    - jfrog_edge
+  vars:
+    jfrog_base_url: "http://artifactory.example.com"
+    jfrog_access_token: "your-secure-token"
