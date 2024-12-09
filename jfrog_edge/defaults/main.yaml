@@ -1,9 +1,14 @@
-# Default variables for JFrog Edge
-jfrog_edge_version: "7.63.3"
-jfrog_edge_install_dir: "/opt/jfrog"
-jfrog_edge_data_dir: "/var/opt/jfrog/artifactory"
-jfrog_edge_user: "artifactory"
-jfrog_edge_group: "artifactory"
+# JFrog Artifactory version
+jfrog_version: "7.66.0"
+jfrog_download_url: "https://releases.jfrog.io/artifactory/artifactory-pro/jfrog-artifactory-pro-{{ jfrog_version }}-linux.tar.gz"
 
-jfrog_base_url: "http://your-artifactory-url"
-jfrog_access_token: "your-access-token"
+# Installation paths
+jfrog_install_dir: "/opt/jfrog"
+jfrog_data_dir: "/var/opt/jfrog/artifactory"
+jfrog_user: "artifactory"
+jfrog_group: "artifactory"
+
+# Service configuration
+jfrog_service_name: "artifactory"
+jfrog_port: 8082
+jfrog_java_opts: "-Xms512m -Xmx2g"
