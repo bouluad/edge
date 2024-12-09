@@ -1,57 +1,71 @@
-- name: Ensure JFrog Edge user exists
-  ansible.builtin.user:
-    name: "{{ jfrog_edge_user }}"
-    group: "{{ jfrog_edge_group }}"
-    create_home: no
-    system: yes
+---
+- name: Create Artifactory user and group
+  ansible.builtin.group:
+    name: "{{ jfrog_group }}"
+    state: present
 
-- name: Create directories for installation and data
+- name: Create Artifactory group
+  ansible.builtin.user:
+    name: "{{ jfrog_user }}"
+    group: "{{ jfrog_group }}"
+    shell: /bin/bash
+    create_home: no
+
+- name: Create installation and data directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ jfrog_edge_user }}"
-    group: "{{ jfrog_edge_group }}"
-    mode: '0755'
+    owner: "{{ jfrog_user }}"
+    group: "{{ jfrog_group }}"
+    mode: "0755"
   loop:
-    - "{{ jfrog_edge_install_dir }}"
-    - "{{ jfrog_edge_data_dir }}"
+    - "{{ jfrog_install_dir }}"
+    - "{{ jfrog_data_dir }}"
 
-- name: Download JFrog Edge binary
+- name: Download Artifactory
   ansible.builtin.get_url:
-    url: "https://releases.jfrog.io/artifactory/artifactory-pro/{{ jfrog_edge_version }}/jfrog-artifactory-{{ jfrog_edge_version }}-linux.tar.gz"
-    dest: "/tmp/jfrog-edge.tar.gz"
+    url: "{{ jfrog_download_url }}"
+    dest: "/tmp/artifactory.tar.gz"
+    mode: "0644"
 
-- name: Extract JFrog Edge
+- name: Extract Artifactory
   ansible.builtin.unarchive:
-    src: "/tmp/jfrog-edge.tar.gz"
-    dest: "{{ jfrog_edge_install_dir }}"
+    src: "/tmp/artifactory.tar.gz"
+    dest: "{{ jfrog_install_dir }}"
     remote_src: yes
-    owner: "{{ jfrog_edge_user }}"
-    group: "{{ jfrog_edge_group }}"
-    extra_opts: [--strip-components=1]
+    owner: "{{ jfrog_user }}"
+    group: "{{ jfrog_group }}"
 
-- name: Set up configuration files
+- name: Configure systemd service
   ansible.builtin.template:
-    src: "artifactory.config.yaml.j2"
-    dest: "{{ jfrog_edge_data_dir }}/etc/artifactory/artifactory.config.yaml"
-    owner: "{{ jfrog_edge_user }}"
-    group: "{{ jfrog_edge_group }}"
-    mode: '0644'
-
-- name: Set up systemd service
-  ansible.builtin.template:
-    src: "systemd-artifactory-edge.service.j2"
-    dest: "/etc/systemd/system/artifactory.service"
+    src: "artifactory.service.j2"
+    dest: "/etc/systemd/system/{{ jfrog_service_name }}.service"
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
-- name: Reload systemd
+- name: Reload systemd daemon
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Enable and start Artifactory service
   ansible.builtin.systemd:
-    name: artifactory
-    enabled: yes
+    name: "{{ jfrog_service_name }}"
     state: started
+    enabled: true
+
+- name: Configure Edge node
+  ansible.builtin.uri:
+    url: "http://localhost:{{ jfrog_port }}/artifactory/api/system/configuration"
+    method: POST
+    body: |
+      {
+        "edge": {
+          "url": "{{ central_artifactory_url }}",
+          "apiKey": "{{ central_artifactory_api_key }}"
+        }
+      }
+    status_code: 200
+    headers:
+      Content-Type: "application/json"
+    body_format: json
