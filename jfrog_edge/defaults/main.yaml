@@ -12,3 +12,6 @@ jfrog_group: "artifactory"
 jfrog_service_name: "artifactory"
 jfrog_port: 8082
 jfrog_java_opts: "-Xms512m -Xmx2g"
+
+central_artifactory_url: "https://central-artifactory.example.com"
+central_artifactory_api_key: "your-api-key"
