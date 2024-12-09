@@ -1,0 +1,16 @@
+[Unit]
+Description=JFrog Artifactory Service
+After=network.target
+
+[Service]
+User={{ jfrog_user }}
+Group={{ jfrog_group }}
+ExecStart={{ jfrog_install_dir }}/artifactory-pro-{{ jfrog_version }}/bin/artifactoryManage.sh start
+ExecStop={{ jfrog_install_dir }}/artifactory-pro-{{ jfrog_version }}/bin/artifactoryManage.sh stop
+Environment=JAVA_OPTIONS="{{ jfrog_java_opts }}"
+WorkingDirectory={{ jfrog_install_dir }}
+Restart=on-failure
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
