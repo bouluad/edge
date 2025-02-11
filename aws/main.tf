@@ -89,22 +89,72 @@ resource "aws_db_instance" "artifactory_db" {
 }
 
 #----------------------
-# EC2 Instance for Artifactory Edge
+# Application Load Balancer (ALB)
 #----------------------
-resource "aws_instance" "artifactory" {
-  ami                    = "ami-12345678"  # Change to latest Amazon Linux 2 or Ubuntu AMI
-  instance_type          = "t3.medium"
-  iam_instance_profile   = aws_iam_instance_profile.artifactory_profile.name
-  security_groups        = [aws_security_group.artifactory_sg.name]
-  key_name               = "my-key"  # Replace with your key pair
+resource "aws_lb" "artifactory_alb" {
+  name               = "artifactory-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.artifactory_sg.id]
+  subnets           = ["subnet-xxxxxxx", "subnet-yyyyyyy"]  # Replace with actual subnet IDs
+}
+
+resource "aws_lb_target_group" "artifactory_tg" {
+  name     = "artifactory-tg"
+  port     = 8081
+  protocol = "HTTP"
+  vpc_id   = "vpc-xxxxxxx"  # Replace with actual VPC ID
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.artifactory_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.artifactory_tg.arn
+  }
+}
+
+#----------------------
+# Auto Scaling Group (ASG)
+#----------------------
+resource "aws_launch_template" "artifactory_lt" {
+  name          = "artifactory-launch-template"
+  image_id      = "ami-12345678"  # Change to latest Amazon Linux 2 or Ubuntu AMI
+  instance_type = "t3.medium"
+  key_name      = "my-key"  # Replace with your key pair
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.artifactory_profile.name
+  }
+
+  network_interfaces {
+    security_groups = [aws_security_group.artifactory_sg.id]
+  }
+}
+
+resource "aws_autoscaling_group" "artifactory_asg" {
+  desired_capacity     = 2
+  min_size            = 1
+  max_size            = 3
+  vpc_zone_identifier = ["subnet-xxxxxxx", "subnet-yyyyyyy"]  # Replace with actual subnet IDs
+
+  launch_template {
+    id      = aws_launch_template.artifactory_lt.id
+    version = "$Latest"
+  }
+
+  target_group_arns = [aws_lb_target_group.artifactory_tg.arn]
 }
 
 #----------------------
 # Outputs
 #----------------------
-output "ec2_public_ip" {
-  value = aws_instance.artifactory.public_ip
-  description = "Public IP address of the Artifactory Edge EC2 instance"
+output "alb_dns_name" {
+  value = aws_lb.artifactory_alb.dns_name
+  description = "DNS name of the Application Load Balancer"
 }
 
 output "rds_endpoint" {
@@ -116,9 +166,10 @@ output "rds_endpoint" {
 # Documentation
 #----------------------
 # This Terraform script deploys Artifactory Edge in AWS with:
-# 1. An EC2 instance for running Artifactory Edge.
-# 2. An S3 bucket for storing artifacts.
-# 3. A PostgreSQL RDS instance for metadata storage.
-# 4. IAM roles for secure access to AWS resources.
-# 5. Security groups to control network access.
-# Modify the variables such as region, AMI ID, and instance type as needed before deployment.
+# 1. An Auto Scaling Group for Artifactory Edge instances.
+# 2. An Application Load Balancer (ALB) for distributing traffic.
+# 3. An S3 bucket for storing artifacts.
+# 4. A PostgreSQL RDS instance for metadata storage.
+# 5. IAM roles for secure access to AWS resources.
+# 6. Security groups to control network access.
+# Modify the variables such as region, AMI ID, instance type, and subnets as needed before deployment.
