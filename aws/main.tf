@@ -77,15 +77,15 @@ resource "aws_security_group" "artifactory_sg" {
 #----------------------
 resource "aws_db_instance" "artifactory_db" {
   identifier           = "artifactory-db"
-  engine              = "postgres"
-  engine_version      = "13"
-  instance_class      = "db.t3.medium"
-  allocated_storage   = 20
-  username            = "artifactory"
-  password            = "StrongPassword123!"  # Change or use AWS Secrets Manager
-  publicly_accessible = false
+  engine               = "postgres"
+  engine_version       = "13"
+  instance_class       = "db.t3.medium"
+  allocated_storage    = 20
+  username             = "artifactory"
+  password             = "StrongPassword123!"  # Change or use AWS Secrets Manager
+  publicly_accessible  = false
   vpc_security_group_ids = [aws_security_group.artifactory_sg.id]
-  skip_final_snapshot = true
+  skip_final_snapshot  = true
 }
 
 #----------------------
@@ -96,14 +96,14 @@ resource "aws_lb" "artifactory_alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.artifactory_sg.id]
-  subnets           = ["subnet-xxxxxxx", "subnet-yyyyyyy"]  # Replace with actual subnet IDs
+  subnets            = ["subnet-xxxxxxxx", "subnet-yyyyyyyy"]  # Replace with actual subnet IDs
 }
 
 resource "aws_lb_target_group" "artifactory_tg" {
   name     = "artifactory-tg"
   port     = 8081
   protocol = "HTTP"
-  vpc_id   = "vpc-xxxxxxx"  # Replace with actual VPC ID
+  vpc_id   = "vpc-xxxxxxxx"  # Replace with actual VPC ID
 }
 
 resource "aws_lb_listener" "http" {
@@ -122,7 +122,7 @@ resource "aws_lb_listener" "http" {
 #----------------------
 resource "aws_launch_template" "artifactory_lt" {
   name          = "artifactory-launch-template"
-  image_id      = "ami-12345678"  # Change to latest Amazon Linux 2 or Ubuntu AMI
+  image_id      = "ami-xxxxxxxx"  # Replace with latest Amazon Linux 2 or Ubuntu AMI ID
   instance_type = "t3.medium"
   key_name      = "my-key"  # Replace with your key pair
 
@@ -139,7 +139,7 @@ resource "aws_autoscaling_group" "artifactory_asg" {
   desired_capacity     = 2
   min_size            = 1
   max_size            = 3
-  vpc_zone_identifier = ["subnet-xxxxxxx", "subnet-yyyyyyy"]  # Replace with actual subnet IDs
+  vpc_zone_identifier = ["subnet-xxxxxxxx", "subnet-yyyyyyyy"]  # Replace with actual subnet IDs
 
   launch_template {
     id      = aws_launch_template.artifactory_lt.id
@@ -153,12 +153,12 @@ resource "aws_autoscaling_group" "artifactory_asg" {
 # Outputs
 #----------------------
 output "alb_dns_name" {
-  value = aws_lb.artifactory_alb.dns_name
+  value       = aws_lb.artifactory_alb.dns_name
   description = "DNS name of the Application Load Balancer"
 }
 
 output "rds_endpoint" {
-  value = aws_db_instance.artifactory_db.endpoint
+  value       = aws_db_instance.artifactory_db.endpoint
   description = "Endpoint for the PostgreSQL RDS instance"
 }
 
