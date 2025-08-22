@@ -1,0 +1,88 @@
+# values-artifactory.yaml
+
+# Use images from your on-prem registry (applies to all subcharts the chart might use)
+global:
+  imageRegistry: <registry.internal.example.com>       # ← your private registry host
+  imagePullSecrets:
+    - name: artifactory-regcred                        # kubernetes docker-registry secret name
+
+# We use an external DB, so disable the bundled one
+postgresql:
+  enabled: false
+
+# If the chart still exposes an nginx subchart and you prefer your own ingress controller:
+nginx:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: <nginx>                                   # e.g. "nginx" or "alb" depending on your controller
+  hosts:
+    - host: <artifactory.example.com>
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: artifactory-tls                      # must exist in the same namespace
+      hosts:
+        - <artifactory.example.com>
+
+artifactory:
+  # Main Artifactory container image (path is appended to global.imageRegistry)
+  image:
+    repository: jfrog/artifactory-pro                  # keep upstream path; global.imageRegistry adds your registry
+    tag: <latest-tested-tag>                           # pin a version you mirrored
+    pullPolicy: IfNotPresent
+
+  # Router (front door) service type; keep ClusterIP when using Ingress
+  router:
+    service:
+      type: ClusterIP
+
+  # External PostgreSQL configuration
+  database:
+    type: postgresql
+    driver: org.postgresql.Driver
+    # Use either the secret-based fields below OR put user/password inline (not recommended)
+    url: "jdbc:postgresql://<db-hostname>:5432/<db-name>?sslmode=<require|disable>"
+    # If you prefer secrets (recommended):
+    existingSecret: artifactory-db                     # k8s secret you will create
+    # Keys expected in the secret (common pattern across recent chart versions)
+    secrets:
+      userKey: db-user
+      passwordKey: db-password
+
+  # Base URL helps with redirects and tokens; set it to your public URL over HTTPS
+  ## Some chart versions set this under 'access'; others via systemYaml. Both shown below—use one.
+  access:
+    baseUrl: "https://<artifactory.example.com>"
+
+  # Persistent storage (adjust to your storage class & capacity)
+  persistence:
+    enabled: true
+    size: 200Gi
+    storageClassName: <fast-ssd>
+
+  # (Optional) extra env tweaks commonly used for strict HTTPS
+  extraEnvironmentVariables:
+    - name: JF_ROUTER_TOPOLOGY_LOCAL_REQUIRE_HTTPS
+      value: "true"
+
+  # (Optional) If your chart expects systemYaml, uncomment and tailor:
+  # systemYaml: |
+  #   shared:
+  #     node:
+  #       id: artifactory-primary
+  #   router:
+  #     haEnabled: false
+  #   server:
+  #     context:
+  #       urlBase: "https://<artifactory.example.com>"
+
+# Make sure any sidecars/initContainers also pull from your registry
+initContainers:
+  initContainersResources: {}
+  # If your chart exposes a separate image block for init, you can also set:
+  # image:
+  #   repository: jfrog/artifactory-pro
+  #   tag: <same-as-above>
